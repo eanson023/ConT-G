@@ -24,6 +24,7 @@ parser.add_argument("--video_feature_dim", type=int, default=1024, help="video f
 parser.add_argument("--char_dim", type=int, default=50, help="character dimension, set to 100 for activitynet")
 parser.add_argument("--dim", type=int, default=128, help="hidden size")
 parser.add_argument("--highlight_lambda", type=float, default=5.0, help="lambda for highlight region")
+parser.add_argument("--highlight_contrast", type=float, default=5.0, help="lambda for contrast region")
 parser.add_argument("--num_heads", type=int, default=8, help="number of heads")
 parser.add_argument("--drop_rate", type=float, default=0.2, help="dropout rate")
 parser.add_argument('--predictor', type=str, default='rnn', help='[rnn | transformer]')
@@ -100,11 +101,13 @@ if configs.mode.lower() == 'train':
             query_mask = (torch.zeros_like(word_ids) != word_ids).float().to(device)
             video_mask = convert_length_to_mask(vfeat_lens).to(device)
             # compute logits
-            h_score, start_logits, end_logits = model(word_ids, char_ids, vfeats, video_mask, query_mask)
+            h_score, start_logits, end_logits, query_features, features = model(word_ids, char_ids, vfeats, video_mask, query_mask)
             # compute loss
             highlight_loss = model.compute_highlight_loss(h_score, h_labels, video_mask)
-            loc_loss = model.compute_loss(start_logits, end_logits, s_labels, e_labels)
-            total_loss = loc_loss + configs.highlight_lambda * highlight_loss
+            loc_loss = model.compute_loss(start_logits, end_logits, s_labels, e_labels, video_mask)
+            contrast_loss=model.compute_contrast_loss(query_features, features,s_labels,e_labels,video_mask)
+            print(f"loc_loss:{loc_loss}  highlight_loss:{highlight_loss} contrast_loss:{contrast_loss}")
+            total_loss = loc_loss + configs.highlight_lambda * highlight_loss +configs.contrast_lambda*contrast_loss
             # compute and apply gradients
             optimizer.zero_grad()
             total_loss.backward()

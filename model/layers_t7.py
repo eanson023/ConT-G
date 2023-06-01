@@ -363,7 +363,36 @@ class ConditionedPredictor(nn.Module):
         return start_index, end_index
 
     @staticmethod
-    def compute_cross_entropy_loss(start_logits, end_logits, start_labels, end_labels):
+    def smooth_label( labels,num_classs,tm_lens,lens):
+        """
+        labels:分类标签
+        num_classs:分类个数
+        tm_lens:每个target moment的长度
+        lens:每个视频长度
+        """
+        extend=0.1
+        factor=0.4
+        labels_new=F.one_hot(labels,num_classes=num_classs).type(torch.float32)
+        for idx in range(labels.shape[0]):
+            target=labels[idx]
+            cur_max_len = lens[idx].type(torch.int64)
+            extend_len = round(extend * float(tm_lens[idx]+1))
+            if extend_len > 0:
+                st_ = max(0, target - extend_len)
+                et_ = min(target + extend_len, cur_max_len - 1)
+                labels_new[idx][st_:(et_ + 1)] = factor/(et_-st_)
+                labels_new[idx][target]=1-factor
+
+        return labels_new
+
+    @staticmethod
+    def compute_cross_entropy_loss(start_logits, end_logits, start_labels, end_labels, video_mask):
+        # nfeats=video_mask.sum(1)
+        # tm_lens=end_labels-start_labels
+        # num_classes=start_logits.shape[1]
+        # start_labels=ConditionedPredictor.smooth_label(start_labels, num_classes, tm_lens, nfeats)
+        # end_labels=ConditionedPredictor.smooth_label(end_labels, num_classes, tm_lens, nfeats)
         start_loss = nn.CrossEntropyLoss(reduction='mean')(start_logits, start_labels)
         end_loss = nn.CrossEntropyLoss(reduction='mean')(end_logits, end_labels)
-        return start_loss + end_loss
+        return start_loss + end_loss 
+   

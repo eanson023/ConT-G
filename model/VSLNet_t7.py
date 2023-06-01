@@ -59,7 +59,7 @@ class VSLNet(nn.Module):
         h_score = self.highlight_layer(features, v_mask)
         features = features * h_score.unsqueeze(2)
         start_logits, end_logits = self.predictor(features, mask=v_mask)
-        return h_score, start_logits, end_logits
+        return h_score, start_logits, end_logits, query_features, features
 
     def extract_index(self, start_logits, end_logits):
         return self.predictor.extract_index(start_logits=start_logits, end_logits=end_logits)
@@ -70,3 +70,43 @@ class VSLNet(nn.Module):
     def compute_loss(self, start_logits, end_logits, start_labels, end_labels):
         return self.predictor.compute_cross_entropy_loss(start_logits=start_logits, end_logits=end_logits,
                                                          start_labels=start_labels, end_labels=end_labels)
+
+    def compute_contrast_loss(self, text, video,frame_start, frame_end, mask,weighting=True, pooling='mean', tao=0.2):
+        # b:batch
+        b, _, d = text.shape
+        text_global = torch.ones(b, d).cuda()
+        video_global = torch.ones(b, d).cuda()
+        for i in range(b):
+            if pooling == 'mean':
+                text_global[i] = torch.sum(text[i][frame_start[i]:frame_end[i]]) / (frame_end[i] - frame_start[i])
+            elif pooling == 'max':
+                text_global[i] = torch.max(text[i][frame_start[i]:frame_end[i]], 0)[0]
+            video_global[i] = torch.sum(video[i][frame_start[i]:frame_end[i]]) / (frame_end[i] - frame_start[i])
+
+        vcon_loss = 0
+        tcon_loss = 0
+        if weighting:
+            for i in range(b):
+                weighting = 1 - nn.CosineSimilarity(dim=1)(text_global[i].expand(text_global.size()), text_global)
+                weighting[i] = 1
+                cos_similarity = nn.CosineSimilarity(dim=1)(text_global[i].expand(text_global.size()), video_global)
+                cos_similarity = torch.exp(cos_similarity/tao) * weighting
+                vcon_loss += (-1) * torch.log(cos_similarity[i] / cos_similarity.sum())
+            for i in range(b):
+                weighting = 1 - nn.CosineSimilarity(dim=1)(video_global[i].expand(video_global.size()), video_global)
+                weighting[i] = 1
+                cos_similarity = nn.CosineSimilarity(dim=1)(video_global[i].expand(video_global.size()), text_global)
+                cos_similarity = torch.exp(cos_similarity/tao) * weighting
+                tcon_loss += (-1) * torch.log(cos_similarity[i] / cos_similarity.sum())
+        else:
+            for i in range(b):
+                cos_similarity = nn.CosineSimilarity(dim=1)(text_global[i].expand(text_global.size()), video_global)
+                cos_similarity = torch.exp(cos_similarity)
+                vcon_loss += (-1) * torch.log(cos_similarity[i] / cos_similarity.sum())
+            for i in range(b):
+                cos_similarity = nn.CosineSimilarity(dim=1)(video_global[i].expand(video_global.size()), text_global)
+                cos_similarity = torch.exp(cos_similarity)
+                tcon_loss += (-1) * torch.log(cos_similarity[i] / cos_similarity.sum())
+
+        con_loss = (vcon_loss + tcon_loss) / b
+        return con_loss
