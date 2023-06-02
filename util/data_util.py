@@ -45,7 +45,7 @@ def load_video_features(root, max_position_length):
     video_features = dict()
     filenames = glob.glob(os.path.join(root, "*.npy"))
     for filename in tqdm(filenames, total=len(filenames), desc="load video features"):
-        video_id = filename.split("/")[-1].split(".")[0]
+        video_id = filename.split("\\")[-1].split(".")[0]
         feature = np.load(filename)
         if max_position_length is None:
             video_features[video_id] = feature

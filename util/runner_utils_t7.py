@@ -80,7 +80,7 @@ def eval_test(model, data_loader, device, mode='test', epoch=None, global_step=N
             query_mask = (torch.zeros_like(word_ids) != word_ids).float().to(device)
             video_mask = convert_length_to_mask(vfeat_lens).to(device)
             # compute predicted results
-            _, start_logits, end_logits = model(word_ids, char_ids, vfeats, video_mask, query_mask)
+            _, start_logits, end_logits, _, _ = model(word_ids, char_ids, vfeats, video_mask, query_mask)
             start_indices, end_indices = model.extract_index(start_logits, end_logits)
             start_indices = start_indices.cpu().numpy()
             end_indices = end_indices.cpu().numpy()

@@ -24,7 +24,7 @@ parser.add_argument("--video_feature_dim", type=int, default=1024, help="video f
 parser.add_argument("--char_dim", type=int, default=50, help="character dimension, set to 100 for activitynet")
 parser.add_argument("--dim", type=int, default=128, help="hidden size")
 parser.add_argument("--highlight_lambda", type=float, default=5.0, help="lambda for highlight region")
-parser.add_argument("--highlight_contrast", type=float, default=5.0, help="lambda for contrast region")
+parser.add_argument("--contrast_lambda", type=float, default=1.0, help="lambda for contrast region")
 parser.add_argument("--num_heads", type=int, default=8, help="number of heads")
 parser.add_argument("--drop_rate", type=float, default=0.2, help="dropout rate")
 parser.add_argument('--predictor', type=str, default='rnn', help='[rnn | transformer]')
@@ -33,7 +33,7 @@ parser.add_argument("--gpu_idx", type=str, default="0", help="GPU index")
 parser.add_argument("--seed", type=int, default=12345, help="random seed")
 parser.add_argument("--mode", type=str, default="train", help="[train | test]")
 parser.add_argument("--epochs", type=int, default=100, help="number of epochs")
-parser.add_argument("--batch_size", type=int, default=16, help="batch size")
+parser.add_argument("--batch_size", type=int, default=64, help="batch size")
 parser.add_argument("--num_train_steps", type=int, default=None, help="number of training steps")
 parser.add_argument("--init_lr", type=float, default=0.0001, help="initial learning rate")
 parser.add_argument("--clip_norm", type=float, default=1.0, help="gradient clip norm")
@@ -104,9 +104,10 @@ if configs.mode.lower() == 'train':
             h_score, start_logits, end_logits, query_features, features = model(word_ids, char_ids, vfeats, video_mask, query_mask)
             # compute loss
             highlight_loss = model.compute_highlight_loss(h_score, h_labels, video_mask)
-            loc_loss = model.compute_loss(start_logits, end_logits, s_labels, e_labels, video_mask)
+            loc_loss = model.compute_loss(start_logits, end_logits, s_labels, e_labels,video_mask)
             contrast_loss=model.compute_contrast_loss(query_features, features,s_labels,e_labels,video_mask)
-            print(f"loc_loss:{loc_loss}  highlight_loss:{highlight_loss} contrast_loss:{contrast_loss}")
+            # print(f"loc_loss:{loc_loss}  highlight_loss:{highlight_loss} contrast_loss:{contrast_loss}")
+            # total_loss = loc_loss + configs.highlight_lambda * highlight_loss
             total_loss = loc_loss + configs.highlight_lambda * highlight_loss +configs.contrast_lambda*contrast_loss
             # compute and apply gradients
             optimizer.zero_grad()

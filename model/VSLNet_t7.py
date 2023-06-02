@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-from model.layers_t7 import Embedding, VisualProjection, FeatureEncoder, CQAttention, CQConcatenate, \
-    ConditionedPredictor, HighLightLayer
+from model.layers_t7 import Embedding, VisualProjection, FeatureEncoder, CQAttention, CQConcatenate, ConditionedPredictor, HighLightLayer
 from transformers import AdamW, get_linear_schedule_with_warmup
 
 
@@ -59,7 +58,7 @@ class VSLNet(nn.Module):
         h_score = self.highlight_layer(features, v_mask)
         features = features * h_score.unsqueeze(2)
         start_logits, end_logits = self.predictor(features, mask=v_mask)
-        return h_score, start_logits, end_logits, query_features, features
+        return h_score, start_logits, end_logits, query_features, video_features
 
     def extract_index(self, start_logits, end_logits):
         return self.predictor.extract_index(start_logits=start_logits, end_logits=end_logits)
@@ -67,9 +66,9 @@ class VSLNet(nn.Module):
     def compute_highlight_loss(self, scores, labels, mask):
         return self.highlight_layer.compute_loss(scores=scores, labels=labels, mask=mask)
 
-    def compute_loss(self, start_logits, end_logits, start_labels, end_labels):
+    def compute_loss(self, start_logits, end_logits, start_labels, end_labels,video_mask):
         return self.predictor.compute_cross_entropy_loss(start_logits=start_logits, end_logits=end_logits,
-                                                         start_labels=start_labels, end_labels=end_labels)
+                                                         start_labels=start_labels, end_labels=end_labels,video_mask=video_mask)
 
     def compute_contrast_loss(self, text, video,frame_start, frame_end, mask,weighting=True, pooling='mean', tao=0.2):
         # b:batch

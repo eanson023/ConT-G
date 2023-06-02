@@ -387,12 +387,12 @@ class ConditionedPredictor(nn.Module):
 
     @staticmethod
     def compute_cross_entropy_loss(start_logits, end_logits, start_labels, end_labels, video_mask):
-        # nfeats=video_mask.sum(1)
-        # tm_lens=end_labels-start_labels
-        # num_classes=start_logits.shape[1]
-        # start_labels=ConditionedPredictor.smooth_label(start_labels, num_classes, tm_lens, nfeats)
-        # end_labels=ConditionedPredictor.smooth_label(end_labels, num_classes, tm_lens, nfeats)
+        nfeats=video_mask.sum(1)
+        tm_lens=end_labels-start_labels
+        num_classes=start_logits.shape[1]
+        start_labels=ConditionedPredictor.smooth_label(start_labels, num_classes, tm_lens, nfeats)
+        end_labels=ConditionedPredictor.smooth_label(end_labels, num_classes, tm_lens, nfeats)
         start_loss = nn.CrossEntropyLoss(reduction='mean')(start_logits, start_labels)
         end_loss = nn.CrossEntropyLoss(reduction='mean')(end_logits, end_labels)
-        return start_loss + end_loss 
+        return start_loss + end_loss
    
