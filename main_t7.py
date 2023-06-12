@@ -32,7 +32,7 @@ parser.add_argument('--predictor', type=str, default='rnn', help='[rnn | transfo
 # training/evaluation parameters
 parser.add_argument("--gpu_idx", type=str, default="0", help="GPU index")
 parser.add_argument("--seed", type=int, default=12345, help="random seed")
-parser.add_argument("--mode", type=str, default="train", help="[train | test]")
+parser.add_argument("--mode", type=str, default="test", help="[train | test]")
 parser.add_argument("--epochs", type=int, default=30, help="number of epochs")
 parser.add_argument("--batch_size", type=int, default=16, help="batch size")
 parser.add_argument("--num_train_steps", type=int, default=None, help="number of training steps")
