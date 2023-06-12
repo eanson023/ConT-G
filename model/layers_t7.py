@@ -112,6 +112,7 @@ class VisualProjection(nn.Module):
         # the input visual feature with shape (batch_size, seq_len, visual_dim)
         visual_features = self.drop(visual_features)
         output = self.linear(visual_features)  # (batch_size, seq_len, dim)
+        # output = self.eca_layer(output)
         return output
 
 
@@ -124,6 +125,7 @@ class DepthwiseSeparableConvBlock(nn.Module):
                           padding=kernel_size // 2, bias=False),
                 nn.Conv1d(in_channels=dim, out_channels=dim, kernel_size=1, padding=0, bias=True),
                 nn.ReLU(),
+                eca_layer(None, 1)
             ) for _ in range(num_layers)])
         self.layer_norms = nn.ModuleList([nn.LayerNorm(dim, eps=1e-6) for _ in range(num_layers)])
         self.dropout = nn.Dropout(p=drop_rate)
@@ -396,3 +398,28 @@ class ConditionedPredictor(nn.Module):
         end_loss = nn.CrossEntropyLoss(reduction='mean')(end_logits, end_labels)
         return start_loss + end_loss
    
+
+class eca_layer(nn.Module):
+    """Constructs a ECA module.
+
+    Args:
+        channel: Number of channels of the input feature map
+        k_size: Adaptive selection of kernel size
+    """
+    def __init__(self, channel, k_size=3):
+        super(eca_layer, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool1d(1)
+        self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False) 
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        # feature descriptor on the global spatial information
+        y = self.avg_pool(x)
+
+        # Two different branches of ECA module
+        y = self.conv(y.transpose(-1, -2)).transpose(-1, -2)
+
+        # Multi-scale information fusion
+        y = self.sigmoid(y)
+
+        return x * y.expand_as(x)

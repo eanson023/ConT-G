@@ -13,7 +13,7 @@ from util.runner_utils_t7 import set_th_config, convert_length_to_mask, eval_tes
 parser = argparse.ArgumentParser()
 # data parameters
 parser.add_argument('--save_dir', type=str, default='datasets_t7', help='path to save processed dataset')
-parser.add_argument('--task', type=str, default='charades', help='target task')
+parser.add_argument('--task', type=str, default='charades', help='target task|charades')
 parser.add_argument('--fv', type=str, default='new', help='[new | org] for visual features')
 parser.add_argument('--max_pos_len', type=int, default=128, help='maximal position sequence length allowed')
 # model parameters
@@ -32,15 +32,15 @@ parser.add_argument('--predictor', type=str, default='rnn', help='[rnn | transfo
 parser.add_argument("--gpu_idx", type=str, default="0", help="GPU index")
 parser.add_argument("--seed", type=int, default=12345, help="random seed")
 parser.add_argument("--mode", type=str, default="train", help="[train | test]")
-parser.add_argument("--epochs", type=int, default=100, help="number of epochs")
-parser.add_argument("--batch_size", type=int, default=64, help="batch size")
+parser.add_argument("--epochs", type=int, default=30, help="number of epochs")
+parser.add_argument("--batch_size", type=int, default=16, help="batch size")
 parser.add_argument("--num_train_steps", type=int, default=None, help="number of training steps")
 parser.add_argument("--init_lr", type=float, default=0.0001, help="initial learning rate")
 parser.add_argument("--clip_norm", type=float, default=1.0, help="gradient clip norm")
 parser.add_argument("--warmup_proportion", type=float, default=0.0, help="warmup proportion")
 parser.add_argument("--extend", type=float, default=0.1, help="highlight region extension")
 parser.add_argument("--period", type=int, default=100, help="training loss print period")
-parser.add_argument('--model_dir', type=str, default='ckpt_t7', help='path to save trained model weights')
+parser.add_argument('--model_dir', type=str, default='ckpt_t7_chf_smooth_', help='path to save trained model weights')
 parser.add_argument('--model_name', type=str, default='vslnet', help='model name')
 parser.add_argument('--suffix', type=str, default=None, help='set to the last `_xxx` in ckpt repo to eval results')
 configs = parser.parse_args()
@@ -78,7 +78,7 @@ model_dir = os.path.join(home_dir, "model")
 if configs.mode.lower() == 'train':
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
-    eval_period = num_train_batches // 2
+    eval_period = num_train_batches
     save_json(vars(configs), os.path.join(model_dir, 'configs.json'), sort_keys=True, save_pretty=True)
     # build model
     model = VSLNet(configs=configs, word_vectors=dataset['word_vector']).to(device)
@@ -105,7 +105,7 @@ if configs.mode.lower() == 'train':
             # compute loss
             highlight_loss = model.compute_highlight_loss(h_score, h_labels, video_mask)
             loc_loss = model.compute_loss(start_logits, end_logits, s_labels, e_labels,video_mask)
-            contrast_loss=model.compute_contrast_loss(query_features, features,s_labels,e_labels,video_mask)
+            contrast_loss=model.compute_contrast_loss(query_features, features,s_labels,e_labels,video_mask,weighting=False)
             # print(f"loc_loss:{loc_loss}  highlight_loss:{highlight_loss} contrast_loss:{contrast_loss}")
             # total_loss = loc_loss + configs.highlight_lambda * highlight_loss
             total_loss = loc_loss + configs.highlight_lambda * highlight_loss +configs.contrast_lambda*contrast_loss

@@ -51,12 +51,13 @@ class VSLNet(nn.Module):
     def forward(self, word_ids, char_ids, video_features, v_mask, q_mask):
         video_features = self.video_affine(video_features)
         query_features = self.embedding_net(word_ids, char_ids)
-        video_features = self.feature_encoder(video_features, mask=v_mask)
-        query_features = self.feature_encoder(query_features, mask=q_mask)
+        # video_features = self.feature_encoder(video_features, mask=v_mask)
+        # query_features = self.feature_encoder(query_features, mask=q_mask)
         features = self.cq_attention(video_features, query_features, v_mask, q_mask)
         features = self.cq_concat(features, query_features, q_mask)
         h_score = self.highlight_layer(features, v_mask)
         features = features * h_score.unsqueeze(2)
+        video_features = self.feature_encoder(video_features, mask=v_mask)
         start_logits, end_logits = self.predictor(features, mask=v_mask)
         return h_score, start_logits, end_logits, query_features, video_features
 
@@ -77,10 +78,10 @@ class VSLNet(nn.Module):
         video_global = torch.ones(b, d).cuda()
         for i in range(b):
             if pooling == 'mean':
-                text_global[i] = torch.sum(text[i][frame_start[i]:frame_end[i]]) / (frame_end[i] - frame_start[i])
+                text_global[i] = torch.sum(text[i][frame_start[i]:frame_end[i]]) / (frame_end[i] - frame_start[i]+1e-8)
             elif pooling == 'max':
                 text_global[i] = torch.max(text[i][frame_start[i]:frame_end[i]], 0)[0]
-            video_global[i] = torch.sum(video[i][frame_start[i]:frame_end[i]]) / (frame_end[i] - frame_start[i])
+            video_global[i] = torch.sum(video[i][frame_start[i]:frame_end[i]]) / (frame_end[i] - frame_start[i]+1e-8)
 
         vcon_loss = 0
         tcon_loss = 0
