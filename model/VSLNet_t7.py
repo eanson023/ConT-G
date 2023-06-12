@@ -26,7 +26,7 @@ class VSLNet(nn.Module):
         self.video_affine = VisualProjection(visual_dim=configs.video_feature_dim, dim=configs.dim,
                                              drop_rate=configs.drop_rate)
         self.feature_encoder = FeatureEncoder(dim=configs.dim, num_heads=configs.num_heads, kernel_size=7, num_layers=4,
-                                              max_pos_len=configs.max_pos_len, drop_rate=configs.drop_rate)
+                                              max_pos_len=configs.max_pos_len, drop_rate=configs.drop_rate,eca_ksize=configs.eca_ksize)
         # video and query fusion
         self.cq_attention = CQAttention(dim=configs.dim, drop_rate=configs.drop_rate)
         self.cq_concat = CQConcatenate(dim=configs.dim)
@@ -57,7 +57,7 @@ class VSLNet(nn.Module):
         features = self.cq_concat(features, query_features, q_mask)
         h_score = self.highlight_layer(features, v_mask)
         features = features * h_score.unsqueeze(2)
-        video_features = self.feature_encoder(video_features, mask=v_mask)
+        features = self.feature_encoder(features, mask=v_mask)
         start_logits, end_logits = self.predictor(features, mask=v_mask)
         return h_score, start_logits, end_logits, query_features, video_features
 

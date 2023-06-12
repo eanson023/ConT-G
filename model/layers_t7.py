@@ -117,7 +117,7 @@ class VisualProjection(nn.Module):
 
 
 class DepthwiseSeparableConvBlock(nn.Module):
-    def __init__(self, dim, kernel_size, drop_rate, num_layers=4):
+    def __init__(self, dim, kernel_size, drop_rate, num_layers=4, eca_ksize=1):
         super(DepthwiseSeparableConvBlock, self).__init__()
         self.depthwise_separable_conv = nn.ModuleList([
             nn.Sequential(
@@ -125,7 +125,7 @@ class DepthwiseSeparableConvBlock(nn.Module):
                           padding=kernel_size // 2, bias=False),
                 nn.Conv1d(in_channels=dim, out_channels=dim, kernel_size=1, padding=0, bias=True),
                 nn.ReLU(),
-                eca_layer(None, 1)
+                eca_layer(None, eca_ksize)
             ) for _ in range(num_layers)])
         self.layer_norms = nn.ModuleList([nn.LayerNorm(dim, eps=1e-6) for _ in range(num_layers)])
         self.dropout = nn.Dropout(p=drop_rate)
@@ -193,11 +193,11 @@ class MultiHeadAttentionBlock(nn.Module):
 
 
 class FeatureEncoder(nn.Module):
-    def __init__(self, dim, num_heads, max_pos_len, kernel_size=7, num_layers=4, drop_rate=0.0):
+    def __init__(self, dim, num_heads, max_pos_len, kernel_size=7, num_layers=4, drop_rate=0.0,eca_ksize=1):
         super(FeatureEncoder, self).__init__()
         self.pos_embedding = PositionalEmbedding(num_embeddings=max_pos_len, embedding_dim=dim)
         self.conv_block = DepthwiseSeparableConvBlock(dim=dim, kernel_size=kernel_size, drop_rate=drop_rate,
-                                                      num_layers=num_layers)
+                                                      num_layers=num_layers,eca_ksize=eca_ksize)
         self.attention_block = MultiHeadAttentionBlock(dim=dim, num_heads=num_heads, drop_rate=drop_rate)
 
     def forward(self, x, mask=None):

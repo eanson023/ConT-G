@@ -27,6 +27,7 @@ parser.add_argument("--highlight_lambda", type=float, default=5.0, help="lambda 
 parser.add_argument("--contrast_lambda", type=float, default=1.0, help="lambda for contrast region")
 parser.add_argument("--num_heads", type=int, default=8, help="number of heads")
 parser.add_argument("--drop_rate", type=float, default=0.2, help="dropout rate")
+parser.add_argument("--eca_ksize", type=int, default=1, help="eca kernel size")
 parser.add_argument('--predictor', type=str, default='rnn', help='[rnn | transformer]')
 # training/evaluation parameters
 parser.add_argument("--gpu_idx", type=str, default="0", help="GPU index")
@@ -40,7 +41,7 @@ parser.add_argument("--clip_norm", type=float, default=1.0, help="gradient clip 
 parser.add_argument("--warmup_proportion", type=float, default=0.0, help="warmup proportion")
 parser.add_argument("--extend", type=float, default=0.1, help="highlight region extension")
 parser.add_argument("--period", type=int, default=100, help="training loss print period")
-parser.add_argument('--model_dir', type=str, default='ckpt_t7_chf_smooth_', help='path to save trained model weights')
+parser.add_argument('--model_dir', type=str, default='ckpt_t7', help='path to save trained model weights')
 parser.add_argument('--model_name', type=str, default='vslnet', help='model name')
 parser.add_argument('--suffix', type=str, default=None, help='set to the last `_xxx` in ckpt repo to eval results')
 configs = parser.parse_args()
@@ -105,7 +106,7 @@ if configs.mode.lower() == 'train':
             # compute loss
             highlight_loss = model.compute_highlight_loss(h_score, h_labels, video_mask)
             loc_loss = model.compute_loss(start_logits, end_logits, s_labels, e_labels,video_mask)
-            contrast_loss=model.compute_contrast_loss(query_features, features,s_labels,e_labels,video_mask,weighting=False)
+            contrast_loss=model.compute_contrast_loss(query_features, features, s_labels, e_labels, video_mask, weighting=True)
             # print(f"loc_loss:{loc_loss}  highlight_loss:{highlight_loss} contrast_loss:{contrast_loss}")
             # total_loss = loc_loss + configs.highlight_lambda * highlight_loss
             total_loss = loc_loss + configs.highlight_lambda * highlight_loss +configs.contrast_lambda*contrast_loss
