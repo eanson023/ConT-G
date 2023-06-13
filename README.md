@@ -5,7 +5,7 @@
 
 ## 预训练权重
 
-模型在Charades-STA和TACoS两个数据集上的最终结果已上传[google drive](https://drive.google.com/file/d/1MXAmPYmJi9J5cSatF7fAeUd5HnavU8W5/view?usp=sharing)，下载之后放至项目根目录即可。
+模型在Charades-STA和TACoS两个数据集上的最终结果已上传至[google drive](https://drive.google.com/file/d/1MXAmPYmJi9J5cSatF7fAeUd5HnavU8W5/view?usp=sharing)，下载之后放至项目根目录即可。
 
 测试:
 ```bash
