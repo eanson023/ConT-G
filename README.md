@@ -1,7 +1,19 @@
 # Contrastive Learning from Text-Video for Efficient Local-Global Attention Temporal Grounding
-> 重庆理工大学2023《计算机视觉》期末课程论文代码实现.
+> 重庆理工大学2023秋季《计算机视觉》期末课程论文代码实现.
 
 ![overview](/figures/overview.jpg)
+
+## 预训练权重
+
+模型在Charades-STA和TACoS两个数据集上的最终结果已上传[google drive](https://drive.google.com/file/d/1MXAmPYmJi9J5cSatF7fAeUd5HnavU8W5/view?usp=sharing)，下载之后放至项目根目录即可。
+
+测试:
+```bash
+# train VSLNet on Charades-STA dataset
+python main_t7.py --task charades  --mode test --predictor rnn --model_dir pretrained_models
+# train VSLNet on TACoS dataset
+python main_t7.py --task tacos  --mode test --predictor rnn --model_dir pretrained_models
+```
 
 ## Prerequisites
 - python 3.x with, pytorch (`1.1.0`), torchvision, opencv-python, moviepy, tqdm, nltk, 
@@ -30,17 +42,6 @@ here: [[data preparation]](/prepare). Alternatively, you can download the prepar
 Download the word embeddings from [here](http://nlp.stanford.edu/data/glove.840B.300d.zip) and place it to 
 `./data/features/` directory.
 
-## 预训练权重
-
-模型在两个数据集上跑的最终结果已上传[google drive](https://drive.google.com/file/d/1MXAmPYmJi9J5cSatF7fAeUd5HnavU8W5/view?usp=sharing)，下载之后放至项目根目录即可。
-
-测试:
-```bash
-# train VSLNet on Charades-STA dataset
-python main_t7.py --task charades  --mode test --predictor rnn --model_dir pretrained_models
-# train VSLNet on TACoS dataset
-python main_t7.py --task tacos  --mode test --predictor rnn --model_dir pretrained_models
-```
 
 ## Quick Start
 ### Pytorch Version
